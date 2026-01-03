@@ -3,7 +3,8 @@ from datetime import date
 from tkinter import messagebox, ttk
 import base_datos
 import generador_pdf
-import webbrowser  # <--- Importamos esto para abrir el navegador
+import webbrowser
+import os  # Necesario para buscar el archivo del icono
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -20,6 +21,12 @@ class VentanaCobro(ctk.CTkToplevel):
 
         self.transient(parent)
         self.grab_set()
+
+        # Intentar poner icono también aquí (opcional)
+        try:
+            self.iconbitmap("icono.ico")
+        except:
+            pass
 
         ctk.CTkLabel(
             self, text="Cerrar Caja del Trabajo", font=("Arial", 18, "bold")
@@ -60,8 +67,18 @@ class VentanaCobro(ctk.CTkToplevel):
 class AppTaller(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        # --- CONFIGURACIÓN DE VENTANA ---
         self.title("Sistema de Gestión - MATI-FIX")
         self.geometry("1100x650")
+
+        # --- CARGAR ICONO PERSONALIZADO ---
+        # El try/except evita que el programa falle si falta el archivo
+        try:
+            self.iconbitmap("icono.ico")
+        except:
+            print("No se encontró 'icono.ico'. Usando icono por defecto.")
+
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -280,8 +297,6 @@ class AppTaller(ctk.CTk):
             width=80,
             command=self.imprimir_pdf,
         ).pack(side="left", padx=5)
-
-        # BOTÓN WHATSAPP NUEVO
         ctk.CTkButton(
             frame_acciones,
             text="📞 WhatsApp",
@@ -406,8 +421,6 @@ class AppTaller(ctk.CTk):
         if not sel:
             return messagebox.showwarning("Ojo", "Selecciona un trabajo.")
         valores = self.tabla.item(sel)["values"]
-        # Buscar el teléfono real en la base de datos (mejora para futuro)
-        # Por ahora usamos el nombre para el archivo
         try:
             generador_pdf.generar_recibo(
                 valores[0],
@@ -423,29 +436,15 @@ class AppTaller(ctk.CTk):
             messagebox.showerror("Error", f"Error PDF: {e}")
 
     def enviar_whatsapp(self):
-        """Abre WhatsApp Web con un mensaje pre-cargado."""
         sel = self.tabla.selection()
         if not sel:
             return messagebox.showwarning("Ojo", "Selecciona un cliente.")
-
-        # Obtenemos los datos de la fila seleccionada
         valores = self.tabla.item(sel)["values"]
         nombre = valores[2]
         equipo = valores[3]
         estado = valores[5]
-
-        # IMPORTANTE: Aquí deberíamos tener el teléfono real.
-        # Como en la tabla no mostramos la columna teléfono, tenemos que buscarlo.
-        # Por ahora, el programa te pedirá el número si no lo encuentra fácil.
-
-        # Truco: Mensaje automático
         mensaje = f"Hola {nombre}, te escribo de Mati-Fix. Te aviso que tu equipo ({equipo}) está: {estado}."
-
-        # Abrir WhatsApp Web (Esto abrirá tu navegador)
         webbrowser.open(f"https://web.whatsapp.com/send?text={mensaje}")
-
-        # Nota: Para que mande al número directo, necesitamos guardar el teléfono en la tabla oculta.
-        # Por ahora te abre la lista de contactos para que elijas a quién mandar.
 
     def actualizar_tablero_finanzas(self):
         ingreso, gastos, ganancia, pendiente = base_datos.obtener_balance_total()
